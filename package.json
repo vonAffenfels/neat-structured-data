@@ -1,0 +1,22 @@
+{
+  "name": "neat-structured-data",
+  "version": "1.0.14",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nexum/neat-structured-data.git"
+  },
+  "author": "Dominik Kienzler <d.kienzler@dominik-kienzler.de>",
+  "license": "ISC",
+  "dependencies": {},
+  "peerDependencies": {
+    "bluebird": "^3.4.6",
+    "neat-base": "^1.x.x",
+    "neat-database": "^1.x.x",
+    "neat-projection": "^1.x.x"
+  }
+}
