@@ -133,7 +133,7 @@ module.exports = class StructuredData extends Module {
                                 let unlessCondition = field.unless[key];
 
                                 if (typeof unlessCondition !== "function") {
-                                    if (doc.get(key) != ifCondition) {
+                                    if (doc.get(key) != unlessCondition) {
                                         return true;
                                     } else {
                                         return false;
