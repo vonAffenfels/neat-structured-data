@@ -41,7 +41,6 @@ module.exports = class StructuredData extends Module {
                 return reject(e);
             }
 
-            let model = Application.modules[this.config.dbModuleName].getModel(config.model);
             let populateProm = Promise.resolve();
 
             if (config.populate) {
@@ -63,12 +62,18 @@ module.exports = class StructuredData extends Module {
                         this.log.debug("Dropping group " + group.label + " got empty data and !keepEmpty");
                         return;
                     }
+                    return this.checkUseOfField(group, doc).then((val) => {
+                        if (!val) {
+                            this.log.debug("Not keeping group " + group.label + " condition failed");
+                            return;
+                        }
 
-                    return {
-                        type: "group",
-                        label: group.label,
-                        data: data
-                    }
+                        return {
+                            type: "group",
+                            label: group.label,
+                            data: data
+                        }
+                    });
                 });
             }).then((data) => {
                 return data.filter(v => !!v);
@@ -77,10 +82,30 @@ module.exports = class StructuredData extends Module {
             return Promise.map(config.fields, (field) => {
                 this.log.debug("Processing field " + field.label);
                 if (field.groups) {
+                    // field is a new array of groups
                     return this.getDataFromDocument(doc, field)
-                }
+                } else if (field.fields) {
+                    // field is a group itself
+                    return this.getDataFromDocument(doc, field).then((subgroupFields) => {
+                        if ((!subgroupFields || !subgroupFields.length ) && !field.keepEmpty) {
+                            this.log.debug("Dropping subgroup " + field.label + " got empty data and !keepEmpty");
+                            return;
+                        }
 
-                // @TODO Handle if/unless
+                        return this.checkUseOfField(field, doc).then((val) => {
+                            if (!val) {
+                                this.log.debug("Not keeping subgroup " + field.label + " condition failed");
+                                return;
+                            }
+
+                            return {
+                                type: "group",
+                                label: field.label,
+                                data: subgroupFields
+                            }
+                        });
+                    });
+                }
 
                 let valPromise = Promise.resolve(null);
 
@@ -105,49 +130,7 @@ module.exports = class StructuredData extends Module {
                         return;
                     }
 
-                    let usePromise = Promise.resolve(true);
-
-                    if (field.if) {
-                        usePromise = usePromise.then(() => {
-                            return Promise.map(Object.keys(field.if), (key) => {
-                                let ifCondition = field.if[key];
-
-                                if (typeof ifCondition !== "function") {
-                                    if (doc.get(key) == ifCondition) {
-                                        return true;
-                                    } else {
-                                        return false;
-                                    }
-                                } else {
-                                    return ifCondition(doc);
-                                }
-                            }).then((ifConditionresults) => {
-                                return ifConditionresults.indexOf(false) === -1;
-                            });
-                        });
-                    }
-
-                    if (field.unless) {
-                        usePromise = usePromise.then(() => {
-                            return Promise.map(Object.keys(field.unless), (key) => {
-                                let unlessCondition = field.unless[key];
-
-                                if (typeof unlessCondition !== "function") {
-                                    if (doc.get(key) != unlessCondition) {
-                                        return true;
-                                    } else {
-                                        return false;
-                                    }
-                                } else {
-                                    return unlessCondition(doc);
-                                }
-                            }).then((unlessConditionresults) => {
-                                return unlessConditionresults.indexOf(false) !== -1;
-                            });
-                        });
-                    }
-
-                    return usePromise.then((use) => {
+                    return this.checkUseOfField(field, doc).then((use) => {
                         if (!use) {
                             this.log.debug("Not keeping field " + field.label + " condition failed");
                             return;
@@ -192,5 +175,51 @@ module.exports = class StructuredData extends Module {
                 return data.filter(v => !!v);
             });
         }
+    }
+
+    checkUseOfField(field, doc) {
+        let usePromise = Promise.resolve(true);
+
+        if (field.if) {
+            usePromise = usePromise.then(() => {
+                return Promise.map(Object.keys(field.if), (key) => {
+                    let ifCondition = field.if[key];
+
+                    if (typeof ifCondition !== "function") {
+                        if (doc.get(key) == ifCondition) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return ifCondition(doc);
+                    }
+                }).then((ifConditionresults) => {
+                    return ifConditionresults.indexOf(false) === -1;
+                });
+            });
+        }
+
+        if (field.unless) {
+            usePromise = usePromise.then(() => {
+                return Promise.map(Object.keys(field.unless), (key) => {
+                    let unlessCondition = field.unless[key];
+
+                    if (typeof unlessCondition !== "function") {
+                        if (doc.get(key) != unlessCondition) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return unlessCondition(doc);
+                    }
+                }).then((unlessConditionresults) => {
+                    return unlessConditionresults.indexOf(false) !== -1;
+                });
+            });
+        }
+
+        return usePromise;
     }
 }
