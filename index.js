@@ -60,6 +60,7 @@ module.exports = class StructuredData extends Module {
                 this.log.debug("Processing group " + group.label);
                 return this.getDataFromDocument(doc, group).then((data) => {
                     if ((!data || !data.length ) && !group.keepEmpty) {
+                        this.log.debug("Dropping group " + group.label + " got empty data and !keepEmpty");
                         return;
                     }
 
@@ -99,7 +100,7 @@ module.exports = class StructuredData extends Module {
                 }
 
                 return valPromise.then((realVal) => {
-                    if (!realVal && !field.keepEmpty) {
+                    if ((realVal === null || realVal === undefined || realVal === "") && !field.keepEmpty) {
                         this.log.debug("Not keeping field " + field.label + " empty value and !keepEmpty");
                         return;
                     }
@@ -160,8 +161,6 @@ module.exports = class StructuredData extends Module {
                             if (typeof realVal !== "string") {
                                 tempVal = String(realVal);
                             }
-
-                            console.log(field.map, tempVal, realVal);
 
                             displayValue = field.map[tempVal] || realVal;
                         }
