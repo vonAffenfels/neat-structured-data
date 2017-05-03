@@ -215,7 +215,7 @@ module.exports = class StructuredData extends Module {
                         return unlessCondition(doc);
                     }
                 }).then((unlessConditionresults) => {
-                    return unlessConditionresults.indexOf(false) !== -1;
+                    return unlessConditionresults.indexOf(false) === -1;
                 });
             });
         }
