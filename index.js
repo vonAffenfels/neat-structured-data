@@ -44,7 +44,13 @@ module.exports = class StructuredData extends Module {
             let populateProm = Promise.resolve();
 
             if (config.populate) {
-                populateProm = doc.populate(config.populate).execPopulate()
+                if (!config.populate instanceof Array) {
+                    config.populate = [config.populate];
+                }
+
+                populateProm = Promise.map(config.populate, (field) => {
+                    return doc.populate(field).execPopulate();
+                });
             }
 
             return populateProm.then(() => {
