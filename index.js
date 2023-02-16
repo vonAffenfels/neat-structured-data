@@ -54,17 +54,17 @@ module.exports = class StructuredData extends Module {
             }
 
             return populateProm.then(() => {
-                return this.getDataFromDocument(doc, config);
+                return this.getDataFromDocument(doc, config, config);
             }, reject).then(resolve, reject);
         });
     }
 
-    getDataFromDocument(doc, config) {
+    getDataFromDocument(doc, config, mainConfig) {
         if (config.groups) {
             return Promise.map(config.groups, (group) => {
                 this.log.debug("Processing group " + group.label);
-                return this.getDataFromDocument(doc, group).then((data) => {
-                    if ((!data || !data.length ) && !group.keepEmpty) {
+                return this.getDataFromDocument(doc, group, mainConfig).then((data) => {
+                    if ((!data || !data.length) && !group.keepEmpty) {
                         this.log.debug("Dropping group " + group.label + " got empty data and !keepEmpty");
                         return;
                     }
@@ -89,11 +89,11 @@ module.exports = class StructuredData extends Module {
                 this.log.debug("Processing field " + field.label);
                 if (field.groups) {
                     // field is a new array of groups
-                    return this.getDataFromDocument(doc, field)
+                    return this.getDataFromDocument(doc, field, mainConfig);
                 } else if (field.fields) {
                     // field is a group itself
-                    return this.getDataFromDocument(doc, field).then((subgroupFields) => {
-                        if ((!subgroupFields || !subgroupFields.length ) && !field.keepEmpty) {
+                    return this.getDataFromDocument(doc, field, mainConfig).then((subgroupFields) => {
+                        if ((!subgroupFields || !subgroupFields.length) && !field.keepEmpty) {
                             this.log.debug("Dropping subgroup " + field.label + " got empty data and !keepEmpty");
                             return;
                         }
@@ -172,8 +172,8 @@ module.exports = class StructuredData extends Module {
                             type: "field",
                             label: field.label,
                             value: realVal,
-                            display: displayValue,
-                            path: field.path
+                            display: mainConfig.forceStringDisplay ? displayValue + "" : displayValue,
+                            path: field.path,
                         }
                     });
                 });
