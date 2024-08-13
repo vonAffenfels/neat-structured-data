@@ -77,6 +77,7 @@ module.exports = class StructuredData extends Module {
                         return {
                             type: "group",
                             label: group.label,
+                            key: group.key,
                             data: data
                         }
                     });
@@ -107,6 +108,7 @@ module.exports = class StructuredData extends Module {
                             return {
                                 type: "group",
                                 label: field.label,
+                                key: field.key,
                                 data: subgroupFields
                             }
                         });
